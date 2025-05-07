@@ -1,9 +1,17 @@
 package com.camila.cat_project.di
 
+import android.content.Context
+import androidx.room.Room
+import com.camila.cat_project.data.local.dao.CatBreedDao
+import com.camila.cat_project.data.local.database.CatDatabase
+import com.camila.cat_project.data.mapper.CatBreedMapper
 import com.camila.cat_project.data.remote.api.CatApiService
+import com.camila.cat_project.data.repository.CatRepositoryImpl
+import com.camila.cat_project.domain.repository.CatBreedRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
@@ -45,4 +53,37 @@ object AppModule {
             }
             .build()
     }
+
+    @Provides
+    @Singleton
+    fun provideCatBreedDao(database: CatDatabase): CatBreedDao {
+        return database.catBreedDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideCatDatabase(@ApplicationContext appContext: Context): CatDatabase {
+        return Room.databaseBuilder(
+            appContext,
+            CatDatabase::class.java,
+            "app_database"
+        ).build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideCatBreedMapper(): CatBreedMapper {
+        return CatBreedMapper
+    }
+
+    @Provides
+    @Singleton
+    fun provideCatBreedRepository(
+        catApiService: CatApiService,
+        catBreedDao: CatBreedDao,
+        catBreedMapper: CatBreedMapper
+    ): CatBreedRepository {
+        return CatRepositoryImpl(catApiService, catBreedMapper, catBreedDao)
+    }
+
 }
