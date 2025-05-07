@@ -7,7 +7,7 @@ import javax.inject.Inject
 class CatBreedsUseCase @Inject constructor(
     private val repository: CatBreedRepository
 ) {
-    suspend fun getAllBreeds(): List<CatBreedModel> {
+    suspend operator fun invoke(): List<CatBreedModel> {
         return repository.getAllBreeds()
     }
 }
