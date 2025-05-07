@@ -5,32 +5,35 @@ import com.camila.cat_project.data.local.dao.CatBreedDao
 import com.camila.cat_project.data.local.entity.CatBreedEntity
 import com.camila.cat_project.data.mapper.CatBreedMapper
 import com.camila.cat_project.data.remote.api.CatApiService
+import com.camila.cat_project.domain.model.CatBreedModel
+import com.camila.cat_project.domain.repository.CatBreedRepository
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
-
-interface CatRepository {
-    suspend fun getAllBreeds(): List<CatBreedEntity>
-}
 
 class CatRepositoryImpl @Inject constructor(
     private val apiService: CatApiService,
     private val mapper: CatBreedMapper,
     private val breedDao: CatBreedDao
-) : CatRepository {
+) : CatBreedRepository {
 
-    override suspend fun getAllBreeds(): List<CatBreedEntity> {
+    override suspend fun getAllBreeds(): List<CatBreedModel> {
         val localBreeds = breedDao.getAllBreeds().first()
-        try {
-            return localBreeds.ifEmpty {
+        return try {
+            val entities = localBreeds.ifEmpty {
                 val api =
                     apiService.getBreeds(apiKey = "live_dLLr4LPMOFwVwl31R3rjNrYg5ixhIZG5kq5iE8HRZrKIiasrZbORw5HjqT8HsJhB")
-                val breedEntities = mapper.mapImageDtoList(api)
-                breedDao.insertBreed(breedEntities)
-                breedEntities
+
+                val breedEntitiesFromApi = mapper.mapImageDtoList(api)
+                breedDao.insertBreed(breedEntitiesFromApi)
+
+                breedEntitiesFromApi
             }
+
+            mapper.mapCatBreedEntityList(entities)
+
         } catch (e: Exception) {
             Log.d("CatRepository", "Error fetching breeds: ${e.message}")
-            return emptyList()
+            emptyList()
         }
     }
 }
