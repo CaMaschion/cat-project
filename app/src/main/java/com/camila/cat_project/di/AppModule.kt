@@ -2,6 +2,7 @@ package com.camila.cat_project.di
 
 import android.content.Context
 import androidx.room.Room
+import com.camila.cat_project.BuildConfig
 import com.camila.cat_project.data.local.dao.CatBreedDao
 import com.camila.cat_project.data.local.database.CatDatabase
 import com.camila.cat_project.data.mapper.CatBreedMapper
@@ -14,8 +15,10 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
 @Module
@@ -25,9 +28,35 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideRetrofit(): Retrofit {
+    fun provideOkHttpClient(): OkHttpClient {
+        val loggingInterceptor = HttpLoggingInterceptor().apply {
+            level = if (BuildConfig.DEBUG) {
+                HttpLoggingInterceptor.Level.BODY
+            } else {
+                HttpLoggingInterceptor.Level.NONE
+            }
+        }
+
+        return OkHttpClient.Builder()
+            .addInterceptor { chain ->
+                val request = chain.request().newBuilder()
+                    .addHeader("x-api-key", BuildConfig.CAT_API_KEY)
+                    .build()
+                chain.proceed(request)
+            }
+            .addInterceptor(loggingInterceptor)
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
         return Retrofit.Builder()
             .baseUrl(BASE_URL)
+            .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     }
@@ -36,22 +65,6 @@ object AppModule {
     @Singleton
     fun provideCatApi(retrofit: Retrofit): CatApiService {
         return retrofit.create(CatApiService::class.java)
-    }
-
-    // okhttp client is for adding headers
-    @Provides
-    fun providesOkHttpClient(): OkHttpClient {
-        return OkHttpClient.Builder()
-            .addInterceptor { chain ->
-                val request = chain.request().newBuilder()
-                    .addHeader(
-                        "x-api-key",
-                        "live_dLLr4LPMOFwVwl31R3rjNrYg5ixhIZG5kq5iE8HRZrKIiasrZbORw5HjqT8HsJhB"
-                    )
-                    .build()
-                chain.proceed(request)
-            }
-            .build()
     }
 
     @Provides
@@ -66,7 +79,7 @@ object AppModule {
         return Room.databaseBuilder(
             appContext,
             CatDatabase::class.java,
-            "app_database"
+            "cat_database"
         ).build()
     }
 
