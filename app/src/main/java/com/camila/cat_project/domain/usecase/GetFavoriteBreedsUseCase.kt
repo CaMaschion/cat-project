@@ -1,15 +1,14 @@
 package com.camila.cat_project.domain.usecase
 
 import com.camila.cat_project.domain.model.CatBreedModel
-import com.camila.cat_project.domain.model.Result
 import com.camila.cat_project.domain.repository.CatBreedRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
-class GetCatBreedsUseCase @Inject constructor(
+class GetFavoriteBreedsUseCase @Inject constructor(
     private val repository: CatBreedRepository
 ) {
-    operator fun invoke(shouldRefresh: Boolean = false): Flow<Result<List<CatBreedModel>>> {
-        return repository.getAllBreeds(shouldRefresh)
+    operator fun invoke(): Flow<List<CatBreedModel>> {
+        return repository.getFavorites()
     }
 }
